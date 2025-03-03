@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Ping Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f0f0f0;
+        }
+
+        .submit-url-form {
+            margin-top: 20px;
+        }
+
+        .submit-url-form input[type="text"] {
+            width: 50%;
+            height: 30px;
+            font-size: 16px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+
+        .submit-url-form button[type="submit"] {
+            width: 20%;
+            height: 30px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .submit-url-form button[type="submit"]:hover {
+            background-color: #3e8e41;
+        }
+
+        #submit-url-response {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Ping Results</h1>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>URL</th>
+            <th>Response Time</th>
+            <th>Timestamp</th>
+            <th>Status</th>
+        </tr>
+        {% for result in results %}
+        <tr>
+            <td>{{ result[0] }}</td>
+            <td>{{ result[1] }}</td>
+            <td>{{ result[2] }}</td>
+            <td>{{ result[3] }}</td>
+            <td>
+                {% if result[2] %}
+                Success
+                {% else %}
+                Failed
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <div class="submit-url-form">
+        <h2>Submit a URL for Status Check</h2>
+        <form id="submit-url-form">
+            <input type="text" id="url" name="url" placeholder="Enter a URL or IP address">
+            <button type="submit">Submit</button>
+        </form>
+        <div id="submit-url-response"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('submit-url-form');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const url = document.getElementById('url').value;
+            fetch('/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: url })
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    document.getElementById('submit-url-response').innerHTML = `URL submitted successfully: ${url}`;
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                })
+                .catch((error) => {
+                    document.getElementById('submit-url-response').innerHTML = `Error submitting URL: ${error}`;
+                });
+        });
+    </script>
+</body>
+
+</html>
