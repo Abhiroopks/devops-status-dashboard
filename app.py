@@ -1,9 +1,9 @@
 from flask import Flask, redirect, request, jsonify, render_template, url_for
 import sqlite3
 import os
-import schedule
 import time
 import requests
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
 
@@ -13,61 +13,47 @@ if not os.path.exists("db.sqlite3"):
     c = conn.cursor()
     c.execute(
         """CREATE TABLE ping_results
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT, response_time REAL, timestamp TEXT)"""
+                 (url TEXT PRIMARY KEY, response_time REAL, timestamp TEXT)"""
     )
     conn.commit()
     conn.close()
 
 
-def ping_url(url):
+def ping_url(url: str) -> None:
     """
     Ping a URL or IP Address and save the result to the database.
 
     Args:
         url (str): The URL or IP Address to ping.
-
-    Returns:
-        None
     """
+    start_time = time.time()
     try:
         response = requests.head(url, timeout=5)
         response_time = response.elapsed.total_seconds()
-        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-        conn = sqlite3.connect("db.sqlite3")
-        c = conn.cursor()
-        c.execute(
-            "INSERT INTO ping_results (url, response_time, timestamp) VALUES (?, ?, ?)",
-            (url, response_time, timestamp),
-        )
-        conn.commit()
-        conn.close()
-    except requests.exceptions.RequestException as e:
-        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-        conn = sqlite3.connect("db.sqlite3")
-        c = conn.cursor()
-        c.execute(
-            "INSERT INTO ping_results (url, response_time, timestamp) VALUES (?, ?, ?)",
-            (url, None, timestamp),
-        )
-        conn.commit()
-        conn.close()
-        print(f"Error pinging {url}: {e}")
+    except requests.exceptions.RequestException:
+        response_time = None
+
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    conn = sqlite3.connect("db.sqlite3")
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR IGNORE INTO ping_results (url) VALUES (?)", (url,))
+    cursor.execute(
+        "UPDATE ping_results SET response_time = ?, timestamp = ? WHERE url = ?",
+        (response_time, timestamp, url),
+    )
+    conn.commit()
+    conn.close()
 
 
-@app.route("/submit", methods=["POST"])
-def submit_url():
+@app.route("/")
+def index():
     """
-    API endpoint to submit a URL or IP Address for a status check.
-
-    Args:
-        url (str): The URL or IP Address to submit.
+    Redirect from the index path to the view results page.
 
     Returns:
-        jsonify: A JSON response indicating whether the submission was successful.
+        redirect: A redirect response to the results page.
     """
-    url = request.json["url"]
-    ping_url(url)
-    return jsonify({"message": "URL submitted successfully"}), 201
+    return redirect(url_for("view_results"))
 
 
 def ping_urls_periodically():
@@ -86,6 +72,22 @@ def ping_urls_periodically():
     conn.close()
 
 
+@app.route("/submit", methods=["POST"])
+def submit_url():
+    """
+    API endpoint to submit a URL or IP Address for a status check.
+
+    Args:
+        url (str): The URL or IP Address to submit.
+
+    Returns:
+        jsonify: A JSON response indicating whether the submission was successful.
+    """
+    url = request.json["url"]
+    ping_url(url)
+    return jsonify({"message": "URL submitted successfully"}), 201
+
+
 @app.route("/results")
 def view_results():
     """
@@ -102,22 +104,10 @@ def view_results():
     return render_template("results.html", results=results)
 
 
-@app.route("/")
-def index():
-    """
-    Redirect to the results page.
-
-    Returns:
-        redirect: A redirect to the results page.
-    """
-    return redirect(url_for("view_results"))
-
-
-# Schedule the ping_urls_periodically function to run every 5 minutes
-schedule.every(5).minutes.do(ping_urls_periodically)
+scheduler = BackgroundScheduler()
+scheduler.add_job(ping_urls_periodically, "interval", minutes=5)
+scheduler.start()
 
 if __name__ == "__main__":
     app.run(debug=True)
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+    scheduler.shutdown()
