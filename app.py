@@ -1,32 +1,69 @@
 from flask import Flask, redirect, request, jsonify, render_template, url_for
-import sqlite3
+import psycopg2
 import os
 import time
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 
+
+def get_config() -> dict:
+    """
+    Retrieve configuration for connecting to the PostgreSQL database.
+
+    The configuration is sourced from environment variables, with the following defaults:
+    - POSTGRES_HOST: localhost
+    - POSTGRES_DB: flask_db
+    - POSTGRES_USER: flask
+    - POSTGRES_PASSWORD: (no default)
+
+    Returns:
+        dict: A dictionary containing the database configuration.
+    """
+    return {
+        "host": os.getenv("POSTGRES_HOST", "localhost"),
+        "dbname": os.getenv("POSTGRES_DB", "flask_db"),
+        "user": os.getenv("POSTGRES_USER", "flask"),
+        "password": os.getenv("POSTGRES_PASSWORD"),
+    }
+
+
+def connect_to_postgres() -> psycopg2.extensions.connection:
+    """Establishes a connection to a PostgreSQL database.
+
+    Returns:
+        connection: A psycopg2 connection object to the PostgreSQL database.
+    """
+    config = get_config()
+    return psycopg2.connect(
+        host=config["host"],
+        user=config["user"],
+        password=config["password"],
+        dbname=config["dbname"],
+    )
+
+
 app = Flask(__name__)
 
-# Create a SQLite database if it doesn't exist
-if not os.path.exists("db.sqlite3"):
-    conn = sqlite3.connect("db.sqlite3")
-    c = conn.cursor()
-    c.execute(
-        """CREATE TABLE ping_results
-                 (url TEXT PRIMARY KEY, response_time REAL, timestamp TEXT)"""
-    )
-    conn.commit()
-    conn.close()
+
+conn = connect_to_postgres()
+c = conn.cursor()
+c.execute(
+    query="""CREATE TABLE IF NOT EXISTS ping_results (
+        url VARCHAR(255) PRIMARY KEY,
+        response_time REAL,
+        timestamp TIMESTAMP
+        );"""
+)
+conn.commit()
+conn.close()
 
 
 def ping_url(url: str) -> None:
-    """
-    Ping a URL or IP Address and save the result to the database.
+    """Ping a URL or IP Address and save the result to the database.
 
     Args:
         url (str): The URL or IP Address to ping.
     """
-    start_time = time.time()
     try:
         response = requests.head(url, timeout=5)
         response_time = response.elapsed.total_seconds()
@@ -34,15 +71,18 @@ def ping_url(url: str) -> None:
         response_time = None
 
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-    conn = sqlite3.connect("db.sqlite3")
-    cursor = conn.cursor()
-    cursor.execute("INSERT OR IGNORE INTO ping_results (url) VALUES (?)", (url,))
+    database_connection = connect_to_postgres()
+    cursor = database_connection.cursor()
     cursor.execute(
-        "UPDATE ping_results SET response_time = ?, timestamp = ? WHERE url = ?",
+        "INSERT INTO ping_results (url) VALUES (%s) ON CONFLICT (url) DO NOTHING",
+        (url,),
+    )
+    cursor.execute(
+        "UPDATE ping_results SET response_time = %s, timestamp = %s WHERE url = %s",
         (response_time, timestamp, url),
     )
-    conn.commit()
-    conn.close()
+    database_connection.commit()
+    database_connection.close()
 
 
 @app.route("/")
@@ -56,20 +96,15 @@ def index():
     return redirect(url_for("view_results"))
 
 
-def ping_urls_periodically():
-    """
-    Periodically ping all URLs in the database and save the results.
-
-    Returns:
-        None
-    """
-    conn = sqlite3.connect("db.sqlite3")
-    c = conn.cursor()
-    c.execute("SELECT url FROM ping_results")
-    urls = [row[0] for row in c.fetchall()]
+def ping_all_urls():
+    """Periodically ping all URLs in the database and save the results."""
+    db_connection = connect_to_postgres()
+    cursor = db_connection.cursor()
+    cursor.execute("SELECT url FROM ping_results")
+    urls = [row[0] for row in cursor.fetchall()]
     for url in urls:
         ping_url(url)
-    conn.close()
+    db_connection.close()
 
 
 @app.route("/submit", methods=["POST"])
@@ -96,7 +131,7 @@ def view_results():
     Returns:
         render_template: A rendered template displaying all ping results.
     """
-    conn = sqlite3.connect("db.sqlite3")
+    conn = connect_to_postgres()
     c = conn.cursor()
     c.execute("SELECT * FROM ping_results")
     results = c.fetchall()
@@ -105,7 +140,7 @@ def view_results():
 
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(ping_urls_periodically, "interval", minutes=5)
+scheduler.add_job(ping_all_urls, "interval", minutes=5)
 scheduler.start()
 
 if __name__ == "__main__":
