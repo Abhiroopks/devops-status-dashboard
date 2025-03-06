@@ -1,0 +1,25 @@
+services:
+  status_dashboard:
+    image: status_dashboard
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      tags:
+        - "status_dashboard:latest"
+    env_file:
+      - ./.env.dev
+    ports:
+      - 5000:5000
+    command: python manage.py run -h 0.0.0.0
+
+  db:
+    image: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=flask
+      - POSTGRES_PASSWORD=flask
+      - POSTGRES_DB=flask_dev
+
+volumes:
+  postgres_data:

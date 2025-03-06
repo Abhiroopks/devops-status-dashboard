@@ -3,4 +3,4 @@
 Simple web app for testing devops tools.
 
 TODO
-1. Dockerize locally with docker-compose.
+1. Figure out why postgres data not persisting between container starts
