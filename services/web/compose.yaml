@@ -1,5 +1,7 @@
+name: status_dashboard
+
 services:
-  status_dashboard:
+  app:
     image: status_dashboard
     build:
       context: .
@@ -11,6 +13,7 @@ services:
     ports:
       - 5000:5000
     command: python manage.py run -h 0.0.0.0
+    container_name: status_dashboard
 
   db:
     image: postgres
@@ -20,6 +23,8 @@ services:
       - POSTGRES_USER=flask
       - POSTGRES_PASSWORD=flask
       - POSTGRES_DB=flask_dev
+    container_name: db
 
 volumes:
   postgres_data:
+    name: postgres_data
