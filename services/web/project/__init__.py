@@ -24,21 +24,22 @@ class PingResult(db.Model):
 
 
 def ping_url(url: str) -> None:
-    """Ping a URL or IP Address and save the result to the database.
+    """
+    Ping a URL or IP Address and save the result to the database.
 
     Args:
         url (str): The URL or IP Address to ping.
     """
     try:
-        response = requests.head(url, timeout=5)
-        response_time = response.elapsed.total_seconds()
+        start_time = time.time()
+        requests.head(url, timeout=5)
+        response_time = time.time() - start_time
     except requests.exceptions.RequestException:
         response_time = None
 
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
-    ping_result = PingResult(url, response_time, timestamp)
-    db.session.add(ping_result)
+    db.session.merge(PingResult(url, response_time, timestamp))
     db.session.commit()
 
 
