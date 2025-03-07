@@ -1,0 +1,40 @@
+name: status_dashboard_prod
+
+services:
+  app:
+    image: status_dashboard_prod
+    build:
+      context: ../../../
+      dockerfile: ./docker/exclude/prod/Dockerfile
+      tags:
+        - "status_dashboard_prod:latest"
+    env_file:
+      - ./.env.prod
+    expose:
+      - 5000
+    command: gunicorn --bind 0.0.0.0:5000 manage:app
+    container_name: status_dashboard_prod
+
+  db:
+    image: postgres:17.4-alpine3.21
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    env_file:
+      - .env.prod.db
+    container_name: db_prod
+
+  nginx:
+    build:
+      context: ../../../../nginx
+      dockerfile: ./Dockerfile
+      tags:
+        - "nginx_prod:latest"
+    ports:
+      - 1337:80
+    depends_on:
+      - app
+    container_name: nginx
+
+volumes:
+  postgres_data_prod:
+    name: postgres_data_prod
