@@ -10,11 +10,11 @@
 .taskcluster.yml
 
 # Docker
-docker-compose.yml
+*compose.yaml
 Dockerfile
 .docker
 .dockerignore
-**/docker/
+**/exclude/
 
 # Byte-compiled / optimized / DLL files
 **/__pycache__/

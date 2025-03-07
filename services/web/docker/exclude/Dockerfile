@@ -15,13 +15,12 @@ RUN apt-get update && apt-get install -y netcat-traditional
 # set work directory
 WORKDIR /usr/src/app
 
-# Install pip requirements
-RUN pip install --upgrade pip
-COPY ./requirements.txt /usr/src/app/requirements.txt
-RUN pip install -r requirements.txt
-
 # Copy rest of the application
 COPY . ./
+
+# Install pip requirements
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
 # Creates a non-root user with an explicit UID and adds permission to access the /app folder
 # For more info, please refer to https://aka.ms/vscode-docker-python-configure-containers
@@ -30,4 +29,4 @@ USER appuser
 
 
 # run entrypoint.sh
-ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
+ENTRYPOINT ["/usr/src/app/docker/include/entrypoint.sh"]

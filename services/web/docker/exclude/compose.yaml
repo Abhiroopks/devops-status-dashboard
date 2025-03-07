@@ -4,8 +4,8 @@ services:
   app:
     image: status_dashboard
     build:
-      context: .
-      dockerfile: ./Dockerfile
+      context: ../../
+      dockerfile: ./docker/exclude/Dockerfile
       tags:
         - "status_dashboard:latest"
     env_file:
