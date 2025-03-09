@@ -1,9 +1,9 @@
-from flask import Flask, redirect, request, jsonify, render_template, url_for
 import time
+
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
-
 
 app = Flask(__name__)
 app.config.from_object("project.config.Config")
