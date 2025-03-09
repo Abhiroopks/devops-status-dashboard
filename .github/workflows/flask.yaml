@@ -33,7 +33,6 @@ jobs:
         pylint --disable=R0903 --fail-under=8.0 $(git ls-files *.py)
 
     - name: Commit & Push Changes
-      if: ${{ success() }}
       uses: actions-js/push@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}

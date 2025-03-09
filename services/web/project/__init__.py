@@ -1,3 +1,8 @@
+"""
+Web service to ping URLs and save the results to a database.
+
+"""
+
 import time
 
 import requests
@@ -5,12 +10,25 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 
+from project.config import Config
+
+
 app = Flask(__name__)
-app.config.from_object("project.config.Config")
+app.config.from_object(Config)
 db = SQLAlchemy(app)
 
 
 class PingResult(db.Model):
+    """
+    Model representing a ping result.
+
+    Attributes:
+        __tablename__ (str): The name of the database table.
+        url (db.Column): The URL or IP Address that was pinged.
+        response_time (db.Column): The response time for the ping.
+        timestamp (db.Column): The timestamp of when the ping was made.
+    """
+
     __tablename__ = "ping_results"
 
     url = db.Column(db.String(255), primary_key=True)
@@ -18,6 +36,14 @@ class PingResult(db.Model):
     timestamp = db.Column(db.DateTime)
 
     def __init__(self, url, response_time, timestamp):
+        """
+        Initialize a PingResult object.
+
+        Args:
+            url (str): The URL or IP Address that was pinged.
+            response_time (float): The response time for the ping.
+            timestamp (datetime): The timestamp of when the ping was made.
+        """
         self.url = url
         self.response_time = response_time
         self.timestamp = timestamp
@@ -92,7 +118,3 @@ def view_results():
 scheduler = BackgroundScheduler()
 scheduler.add_job(ping_all_urls, "interval", minutes=5)
 scheduler.start()
-
-if __name__ == "__main__":
-    app.run(debug=True)
-    scheduler.shutdown()
