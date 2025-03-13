@@ -3,7 +3,6 @@ Manage a Flask-SQLAlchemy application.
 
 This script defines a Flask CLI group, which is a set of commands that can be
 executed from the command line using the `flask` command.
-
 The available commands are:
 
 *   ``create_db``: Create the database tables.
@@ -11,13 +10,13 @@ The available commands are:
 """
 
 from flask.cli import FlaskGroup
-from project import app, db
+from project import db
 
-cli = FlaskGroup(app)
+cli: FlaskGroup = FlaskGroup()
 
 
 @cli.command("create_db")
-def create_db():
+def create_db() -> None:
     """
     Create the database tables.
 
