@@ -18,7 +18,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r services/web/requirements.txt black isort pylint bandit
+        pip install -r services/web/requirements.txt black isort pylint bandit mypy
 
     - name: Run black
       run: |
@@ -35,6 +35,10 @@ jobs:
     - name: Run Bandit Security Scan
       run: |
         bandit $(git ls-files *.py)
+    
+    - name: Run mypy
+      run: |
+        mypy --disable-error-code=import-untyped $(git ls-files *.py)
 
     - name: Commit & Push Changes
       uses: actions-js/push@master

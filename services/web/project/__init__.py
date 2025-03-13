@@ -4,19 +4,21 @@ Web service to ping URLs and save the results to a database.
 """
 
 import time
+from typing import List, Optional
 
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 from project.config import Config
+from werkzeug.wrappers import Response
 
 app = Flask(__name__)
 app.config.from_object(Config)
 db = SQLAlchemy(app)
 
 
-class PingResult(db.Model):
+class PingResult(db.Model):  # type: ignore
     """
     Model representing a ping result.
 
@@ -33,14 +35,14 @@ class PingResult(db.Model):
     response_time = db.Column(db.Float)
     timestamp = db.Column(db.DateTime)
 
-    def __init__(self, url, response_time, timestamp):
+    def __init__(self, url: str, response_time: Optional[float], timestamp: str):
         """
         Initialize a PingResult object.
 
         Args:
             url (str): The URL or IP Address that was pinged.
-            response_time (float): The response time for the ping.
-            timestamp (datetime): The timestamp of when the ping was made.
+            response_time (Optional[float]): The response time for the ping.
+            timestamp (str): The timestamp of when the ping was made.
         """
         self.url = url
         self.response_time = response_time
@@ -68,7 +70,7 @@ def ping_url(url: str) -> None:
 
 
 @app.route("/")
-def index():
+def index() -> Response:
     """
     Redirect from the index path to the view results page.
 
@@ -78,7 +80,7 @@ def index():
     return redirect(url_for("view_results"))
 
 
-def ping_all_urls():
+def ping_all_urls() -> None:
     """Periodically ping all URLs in the database and save the results."""
     urls = [result.url for result in PingResult.query.all()]
     for url in urls:
@@ -86,7 +88,7 @@ def ping_all_urls():
 
 
 @app.route("/submit", methods=["POST"])
-def submit_url():
+def submit_url() -> tuple:
     """
     API endpoint to submit a URL or IP Address for a status check.
 
@@ -94,22 +96,22 @@ def submit_url():
         url (str): The URL or IP Address to submit.
 
     Returns:
-        jsonify: A JSON response indicating whether the submission was successful.
+        tuple: A JSON response indicating whether the submission was successful.
     """
-    url = request.json["url"]
+    url = request.get_json().get("url")
     ping_url(url)
     return jsonify({"message": "URL submitted successfully"}), 201
 
 
 @app.route("/results")
-def view_results():
+def view_results() -> str:
     """
     Route to view all ping results.
 
     Returns:
         render_template: A rendered template displaying all ping results.
     """
-    results = PingResult.query.all()
+    results: List[PingResult] = PingResult.query.all()
     return render_template("results.html", results=results)
 
 
