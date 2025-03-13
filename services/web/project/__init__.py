@@ -9,10 +9,9 @@ from typing import List, Optional
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, jsonify, redirect, render_template, request, url_for
-from werkzeug.wrappers import Response
 from flask_sqlalchemy import SQLAlchemy
 from project.config import Config
-
+from werkzeug.wrappers import Response
 
 app = Flask(__name__)
 app.config.from_object(Config)
