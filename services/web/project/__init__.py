@@ -60,7 +60,14 @@ def is_valid_url(url: str) -> bool:
     Returns:
         bool: True if the URL is valid and allowed, False otherwise.
     """
-    allowed_domains = ["example.com", "another-allowed-domain.com"]
+    allowed_domains = [
+        "google.com",
+        "yahoo.com",
+        "bing.com",
+        "youtube.com",
+        "facebook.com",
+        "instagram.com",
+    ]
     try:
         result = urlparse(url)
         return result.scheme in ["http", "https"] and any(
