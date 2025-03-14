@@ -5,6 +5,7 @@ Web service to ping URLs and save the results to a database.
 
 import time
 from typing import List, Optional
+from urllib.parse import urlparse
 
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -12,7 +13,6 @@ from flask import Flask, jsonify, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 from project.config import Config
 from werkzeug.wrappers import Response
-from urllib.parse import urlparse
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -63,7 +63,9 @@ def is_valid_url(url: str) -> bool:
     allowed_domains = ["example.com", "another-allowed-domain.com"]
     try:
         result = urlparse(url)
-        return result.scheme in ["http", "https"] and any(result.netloc.endswith(domain) for domain in allowed_domains)
+        return result.scheme in ["http", "https"] and any(
+            result.netloc.endswith(domain) for domain in allowed_domains
+        )
     except Exception:
         return False
 
