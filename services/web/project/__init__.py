@@ -12,6 +12,7 @@ from flask import Flask, jsonify, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 from project.config import Config
 from werkzeug.wrappers import Response
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -49,6 +50,24 @@ class PingResult(db.Model):  # type: ignore
         self.timestamp = timestamp
 
 
+def is_valid_url(url: str) -> bool:
+    """
+    Validate the provided URL.
+
+    Args:
+        url (str): The URL to validate.
+
+    Returns:
+        bool: True if the URL is valid and allowed, False otherwise.
+    """
+    allowed_domains = ["example.com", "another-allowed-domain.com"]
+    try:
+        result = urlparse(url)
+        return result.scheme in ["http", "https"] and any(result.netloc.endswith(domain) for domain in allowed_domains)
+    except Exception:
+        return False
+
+
 def ping_url(url: str) -> None:
     """
     Ping a URL or IP Address and save the result to the database.
@@ -56,6 +75,9 @@ def ping_url(url: str) -> None:
     Args:
         url (str): The URL or IP Address to ping.
     """
+    if not is_valid_url(url):
+        raise ValueError("Invalid or disallowed URL")
+
     try:
         start_time = time.time()
         requests.head(url, timeout=5)
