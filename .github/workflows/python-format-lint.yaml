@@ -1,6 +1,9 @@
-name: Flask
+name: Python-Format-Lint
 
-on: [push]
+on:
+  push:
+    branches-ignore:
+      - main
 
 jobs:
   format-and-lint:

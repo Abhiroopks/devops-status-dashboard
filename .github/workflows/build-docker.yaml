@@ -1,0 +1,19 @@
+name: Build-Docker-Images
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  build-docker-images:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout the repository
+      uses: actions/checkout@v4
+    
+    - name: Build Docker images
+      run: |
+        docker compose -f services/web/docker/exclude/dev/compose.yaml build --no-cache
+
